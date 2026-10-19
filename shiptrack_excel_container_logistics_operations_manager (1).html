@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ShipTrack Excel - Container Logistics Operations Manager</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            800: '#065f46',
+                            900: '#064e3b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Identity Services SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.4);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.7);
+        }
+        .excel-grid {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        .excel-grid th, .excel-grid td {
+            border-right: 1px solid rgba(229, 231, 235, 0.8);
+            border-bottom: 1px solid rgba(229, 231, 235, 0.8);
+        }
+        .dark .excel-grid th, .dark .excel-grid td {
+            border-right: 1px solid rgba(55, 65, 81, 0.6);
+            border-bottom: 1px solid rgba(55, 65, 81, 0.6);
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-100 font-sans antialiased transition-colors duration-200">
+
+    <div class="flex flex-col h-screen overflow-hidden">
+        <!-- TOP TOOLBAR -->
+        <header class="bg-gradient-to-r from-emerald-800 via-teal-800 to-emerald-900 text-white shadow-lg z-20 flex-shrink-0">
+            <div class="px-4 py-2.5 flex flex-wrap items-center justify-between gap-3">
+                
+                <!-- Brand & File Name -->
+                <div class="flex items-center space-x-3">
+                    <div class="bg-emerald-500/20 p-2 rounded-lg border border-emerald-400/30 flex items-center justify-center">
+                        <i class="fa-solid font-bold fa-ship text-emerald-300 text-xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <input id="docTitleInput" type="text" value="Logistics_Operations_Tracker_2026.xlsx" 
+                                class="bg-transparent hover:bg-emerald-700/50 focus:bg-emerald-900/80 px-2 py-0.5 rounded text-sm font-semibold text-white focus:outline-none focus:ring-1 focus:ring-emerald-400 border border-transparent hover:border-emerald-500/50 transition" />
+                            <i class="fa-solid fa-pen text-xs text-emerald-300/70 pointer-events-none"></i>
+                        </div>
+                        <p class="text-[11px] text-emerald-200/80 pl-2">ShipTrack Operations Desk • Real-time Sync Active</p>
+                    </div>
+                </div>
+
+                <!-- Center Controls & Actions -->
+                <div class="flex items-center space-x-2">
+                    <button id="openPasteModalBtn" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded-md text-xs font-medium shadow flex items-center space-x-1.5 transition">
+                        <i class="fa-solid fa-file-import"></i>
+                        <span class="hidden sm:inline">Bulk Paste</span>
+                    </button>
+                    <button id="exportCsvBtn" class="bg-teal-700 hover:bg-teal-600 text-white px-3 py-1.5 rounded-md text-xs font-medium shadow flex items-center space-x-1.5 transition">
+                        <i class="fa-solid fa-file-excel"></i>
+                        <span class="hidden sm:inline">Export CSV</span>
+                    </button>
+                    <button id="addNewRowBtn" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1.5 rounded-md text-xs font-medium shadow flex items-center space-x-1.5 transition">
+                        <i class="fa-solid fa-plus"></i>
+                        <span>Add Row</span>
+                    </button>
+                    <button id="toggleDarkModeBtn" class="bg-emerald-900/60 hover:bg-emerald-900/90 text-emerald-200 p-2 rounded-md text-xs transition border border-emerald-700/50" title="Toggle Dark/Light Mode">
+                        <i class="fa-solid fa-moon text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- User Profile / Auth Area -->
+                <div class="flex items-center space-x-3 bg-emerald-950/40 px-3 py-1.5 rounded-lg border border-emerald-600/30">
+                    <div id="userInfoContainer" class="flex items-center space-x-3">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- TAB NAVIGATION & GLOBAL SEARCH -->
+            <div class="bg-emerald-900/90 px-4 pt-2 flex flex-wrap items-center justify-between border-t border-emerald-700/40 text-xs">
+                <!-- Navigation Tabs -->
+    <div class="bg-slate-800 border-b border-slate-700 px-4 pt-2 flex items-center justify-between overflow-x-auto select-none">
+      <div class="flex items-center space-x-1" id="tabs-container">
+        <!-- Dynamic tabs will be rendered here -->
+      </div>
+      <button id="btn-add-tab" class="mb-2 px-3 py-1.5 text-xs font-semibold bg-slate-700 hover:bg-slate-600 text-cyan-400 hover:text-cyan-300 rounded flex items-center space-x-1 border border-slate-600 transition">
+        <i class="fas font-bold">+</i>
+        <span>Add Sheet</span>
+      </button>
+    </div>
+
+    <!-- Main Sheet Table Container -->
+                </div>
+
+                <!-- Global Search & Clear Filters -->
+                <div class="flex items-center space-x-2 pb-1.5">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-1/2 -translate-y-1/2 text-emerald-300/60"></i>
+                        <input id="globalSearchInput" type="text" placeholder="Global search across records..." 
+                            class="bg-emerald-950/60 text-white placeholder-emerald-300/50 text-xs pl-8 pr-3 py-1 rounded-md border border-emerald-600/40 focus:outline-none focus:ring-1 focus:ring-emerald-400 w-48 sm:w-64" />
+                    </div>
+                    <button id="resetFiltersBtn" class="bg-emerald-800/80 hover:bg-emerald-700 text-emerald-200 px-2.5 py-1 rounded text-[11px] flex items-center space-x-1 border border-emerald-600/30 transition" title="Clear all column filters">
+                        <i class="fa-solid fa-filter-circle-xmark"></i>
+                        <span class="hidden md:inline">Clear Filters</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 overflow-hidden relative flex flex-col bg-slate-50 dark:bg-slate-900">
+            
+            <!-- TAB 1: ACTIVE BOOKINGS -->
+            <div id="viewActiveTab" class="flex-1 flex flex-col overflow-hidden">
+                <div class="p-2 bg-slate-200/60 dark:bg-slate-800/60 text-xs flex justify-between items-center border-b border-slate-300 dark:border-slate-700">
+                    <div class="flex items-center space-x-2 text-slate-600 dark:text-slate-300">
+                        <i class="fa-solid fa-circle-info text-emerald-600 dark:text-emerald-400"></i>
+                        <span>Showing active operational tasks. Items marked with <strong>Issue Y = 'Yes'</strong> move automatically to the history tab.</span>
+                    </div>
+                    <span id="activeSummaryText" class="font-medium text-slate-500 dark:text-slate-400">0 Items</span>
+                </div>
+
+                <div class="flex-1 overflow-auto custom-scrollbar p-2">
+                    <table class="excel-grid w-full text-left border-collapse text-xs bg-white dark:bg-slate-800 shadow-sm rounded-lg overflow-hidden">
+                        <thead id="activeGridHead" class="sticky top-0 bg-slate-100 dark:bg-slate-800 z-10 font-semibold text-slate-700 dark:text-slate-200 shadow-sm">
+                            <!-- Populated dynamically by JS -->
+                        </thead>
+                        <tbody id="activeGridBody" class="divide-y divide-slate-200 dark:divide-slate-700">
+                            <!-- Data rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB 2: ISSUE Y & RESOLVED HISTORY -->
+            <div id="viewIssueYTab" class="flex-1 flex flex-col overflow-hidden hidden">
+                <div class="p-2.5 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900/50 flex flex-wrap justify-between items-center text-xs">
+                    <div class="flex items-center space-x-2 text-amber-900 dark:text-amber-200 font-medium">
+                        <i class="fa-solid fa-clock-rotate-left text-amber-600"></i>
+                        <span>Audit Log of Issue Y flagged items and historical updates with logged-in PIC tracking.</span>
+                    </div>
+                    <span id="issueYSummaryText" class="font-semibold text-amber-800 dark:text-amber-300">0 Tracked Records</span>
+                </div>
+
+                <div class="flex-1 overflow-auto custom-scrollbar p-3">
+                    <div class="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden">
+                        <table class="w-full text-left text-xs border-collapse">
+                            <thead class="bg-slate-100 dark:bg-slate-700/80 text-slate-700 dark:text-slate-200 border-b border-slate-300 dark:border-slate-600 uppercase text-[11px] tracking-wider">
+                                <tr>
+                                    <th class="p-3">Booking #</th>
+                                    <th class="p-3">Customer</th>
+                                    <th class="p-3">VVD / POL</th>
+                                    <th class="p-3">ATD & Aging</th>
+                                    <th class="p-3 text-center">Issue Y</th>
+                                    <th class="p-3">Last Modified By</th>
+                                    <th class="p-3">Change Timestamp</th>
+                                    <th class="p-3">Offshore / Onshore Remarks</th>
+                                    <th class="p-3 text-center">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="issueYGridBody" class="divide-y divide-slate-200 dark:divide-slate-700">
+                                <!-- History rows populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- FOOTER STATUS BAR -->
+        <footer class="bg-slate-200 dark:bg-slate-800 border-t border-slate-300 dark:border-slate-700 px-4 py-1.5 text-xs flex justify-between items-center text-slate-600 dark:text-slate-400 flex-shrink-0">
+            <div class="flex items-center space-x-4">
+                <span class="flex items-center space-x-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span>System Ready</span>
+                </span>
+                <span id="currentStorageInfo" class="hidden sm:inline text-slate-500">Auto-saved to LocalStorage</span>
+            </div>
+            <div class="flex items-center space-x-3 text-[11px]">
+                <span class="bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded border border-emerald-300 dark:border-emerald-800">
+                    Aging: ≤3d Green | 4-7d Yellow | >7d Red
+                </span>
+            </div>
+        </footer>
+    </div>
+
+    <!-- BULK PASTE MODAL -->
+    <div id="pasteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-white dark:bg-slate-800 rounded-xl shadow-2xl max-w-3xl w-full flex flex-col overflow-hidden border border-slate-300 dark:border-slate-700">
+            <div class="p-4 bg-emerald-800 text-white flex justify-between items-center">
+                <h3 class="font-bold text-sm flex items-center space-x-2">
+                    <i class="fa-solid fa-file-excel text-emerald-300"></i>
+                    <span>Bulk Import Excel / CSV Rows</span>
+                </h3>
+                <button onclick="closePasteModal()" class="text-emerald-200 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="p-4 space-y-3">
+                <p class="text-xs text-slate-600 dark:text-slate-300">
+                    Copy cells directly from Microsoft Excel or a TSV/CSV spreadsheet and paste them below. 
+                    Columns must match the sequence: <br/>
+                    <span class="font-semibold text-emerald-700 dark:text-emerald-400">PIC, VVD, POL, DATE & TIME (ATD), RECEIVED OF LOADLIST, BOOKING NUMBER, CUSTOMER NAME, FOLLOW UP, DATE, PIC 2, AGING, ISSUE Y, OFFSHORE REMARKS, ONSHORE REMARKS</span>
+                </p>
+                <textarea id="pasteTextarea" rows="8" placeholder="Paste tab-delimited Excel rows here..." 
+                    class="w-full p-3 text-xs font-mono border rounded-lg bg-slate-50 dark:bg-slate-900 dark:text-white border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-emerald-500 focus:outline-none"></textarea>
+                <div class="flex justify-between items-center text-xs">
+                    <span id="pasteStatusText" class="text-amber-600 dark:text-amber-400 font-medium"></span>
+                    <div class="space-x-2">
+                        <button onclick="closePasteModal()" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 rounded-lg text-slate-700 dark:text-slate-200 transition">Cancel</button>
+                        <button onclick="processBulkPaste()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-medium rounded-lg transition shadow">Import Rows</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="fixed bottom-10 right-10 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <div id="toastContent" class="bg-slate-900 text-white px-4 py-3 rounded-lg shadow-2xl flex items-center space-x-3 border border-slate-700 text-xs">
+            <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-base"></i>
+            <span id="toastMessage">Notification message</span>
+        </div>
+    </div>
+
+    <!-- MAIN JAVASCRIPT LOGIC -->
+    <script>
+        // Column Definitions (14 Logistics Columns)
+        const COLUMN_KEYS = [
+            'pic', 'vvd', 'pol', 'atd', 'receivedLoadlist', 
+            'bookingNumber', 'customerName', 'followUp', 'date', 
+            'pic2', 'aging', 'issueY', 'offshoreRemarks', 'onshoreRemarks'
+        ];
+
+        const COLUMN_NAMES = {
+            pic: 'PIC',
+            vvd: 'VVD',
+            pol: 'POL',
+            atd: 'DATE & TIME (ATD)',
+            receivedLoadlist: 'RECEIVED OF LOADLIST',
+            bookingNumber: 'BOOKING NUMBER',
+            customerName: 'CUSTOMER NAME',
+            followUp: 'FOLLOW UP',
+            date: 'DATE',
+            pic2: 'PIC',
+            aging: 'AGING',
+            issueY: 'ISSUE Y',
+            offshoreRemarks: 'OFFSHORE REMARKS',
+            onshoreRemarks: 'ONSHORE REMARKS'
+        };
+
+        // Default Simulated User
+        let currentUser = {
+            name: "Jane Doe (Operations)",
+            email: "jane.doe@logistics-express.com",
+            picture: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&auto=format&fit=crop&q=80",
+            isGoogleUser: false
+        };
+
+        // Application State
+        let currentTab = 'active'; // 'active' or 'issueY'
+        let columnFilters = {};
+        let globalSearchQuery = '';
+        let bookings = [];
+
+        // Sample Seed Data
+        const SAMPLE_BOOKINGS = [
+            {
+                id: 'b1',
+                pic: 'Sarah Jenkins',
+                vvd: 'MAERSK UTAH / 402N',
+                pol: 'USNYC',
+                atd: '2026-10-15T08:30',
+                receivedLoadlist: '2026-10-15',
+                bookingNumber: 'BK-9920381',
+                customerName: 'Apex Global Logistics',
+                followUp: 'Pending Clearance',
+                date: '2026-10-16',
+                pic2: 'Dave Miller',
+                aging: 3,
+                issueY: 'No',
+                offshoreRemarks: 'Documentation complete',
+                onshoreRemarks: 'Awaiting customs hold release',
+                issueYUpdatedBy: null,
+                issueYUpdatedAt: null
+            },
+            {
+                id: 'b2',
+                pic: 'Carlos Ray',
+                vvd: 'MSC LAURA / 601W',
+                pol: 'USLAX',
+                atd: '2026-10-10T14:15',
+                receivedLoadlist: '2026-10-10',
+                bookingNumber: 'BK-8840192',
+                customerName: 'Oceanic Express Ltd',
+                followUp: 'Escalated to Line',
+                date: '2026-10-12',
+                pic2: 'Elena Vance',
+                aging: 8,
+                issueY: 'Yes',
+                offshoreRemarks: 'Container damaged on dock',
+                onshoreRemarks: 'Surveyor report requested',
+                issueYUpdatedBy: {
+                    name: 'Carlos Ray',
+                    email: 'carlos.r@logistics-express.com',
+                    picture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80'
+                },
+                issueYUpdatedAt: '2026-10-12T16:45:00.000Z'
+            },
+            {
+                id: 'b3',
+                pic: 'Anita Roy',
+                vvd: 'ONE APUS / 103E',
+                pol: 'OAKLAND',
+                atd: '2026-10-12T10:00',
+                receivedLoadlist: '2026-10-12',
+                bookingNumber: 'BK-7721094',
+                customerName: 'Symphony Trading',
+                followUp: 'Doc Released',
+                date: '2026-10-14',
+                pic2: 'Anita Roy',
+                aging: 6,
+                issueY: 'No',
+                offshoreRemarks: 'BL issued',
+                onshoreRemarks: 'Standard dispatch',
+                issueYUpdatedBy: null,
+                issueYUpdatedAt: null
+            }
+        ];
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            loadFromLocalStorage();
+            initGoogleSignIn();
+            renderUserAuthArea();
+            renderActiveTableHeader();
+            renderGrid();
+            setupEventListeners();
+        });
+
+        // Local Storage Handling
+        function loadFromLocalStorage() {
+            try {
+                const storedBookings = localStorage.getItem('shiptrack_bookings_data');
+                if (storedBookings) {
+                    bookings = JSON.parse(storedBookings);
+                } else {
+                    bookings = [...SAMPLE_BOOKINGS];
+                    saveToLocalStorage();
+                }
+
+                const storedUser = localStorage.getItem('shiptrack_user');
+                if (storedUser) {
+                    currentUser = JSON.parse(storedUser);
+                }
+
+                const storedTitle = localStorage.getItem('shiptrack_doc_title');
+                if (storedTitle) {
+                    document.getElementById('docTitleInput').value = storedTitle;
+                }
+            } catch (e) {
+                console.error("Failed to load local storage:", e);
+                bookings = [...SAMPLE_BOOKINGS];
+            }
+        }
+
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('shiptrack_bookings_data', JSON.stringify(bookings));
+                localStorage.setItem('shiptrack_user', JSON.stringify(currentUser));
+                const title = document.getElementById('docTitleInput').value;
+                localStorage.setItem('shiptrack_doc_title', title);
+            } catch (e) {
+                console.error("Storage save failed:", e);
+            }
+        }
+
+        // GOOGLE SIGN-IN INTEGRATION & USER AUTH DISPLAY
+        function initGoogleSignIn() {
+            // Check if GIS client is loaded
+            if (window.google && google.accounts && google.accounts.id) {
+                google.accounts.id.initialize({
+                    client_id: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com', // Replace with real ID if available
+                    callback: handleGoogleSignInResponse
+                });
+            }
+        }
+
+        function handleGoogleSignInResponse(response) {
+            // Decode JWT token payload
+            try {
+                const base64Url = response.credential.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+
+                const payload = JSON.parse(jsonPayload);
+
+                currentUser = {
+                    name: payload.name || payload.email.split('@')[0],
+                    email: payload.email,
+                    picture: payload.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(payload.name)}&background=10b981&color=fff`,
+                    isGoogleUser: true
+                };
+
+                saveToLocalStorage();
+                renderUserAuthArea();
+                showToast(`Signed in as ${currentUser.name}`, 'success');
+            } catch (e) {
+                console.error("Failed to decode Google Token:", e);
+            }
+        }
+
+        function triggerSimulatedGoogleLogin() {
+            // Fallback interactive Google login prompt simulator
+            const userEmail = prompt("Enter your Gmail address to simulate Google Sign-In:", "john.smith@gmail.com");
+            if (userEmail && userEmail.trim()) {
+                const name = userEmail.split('@')[0].replace('.', ' ').replace(/(^\w|\s\w)/g, m => m.toUpperCase());
+                currentUser = {
+                    name: name + " (Google)",
+                    email: userEmail.trim(),
+                    picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=059669&color=ffffff`,
+                    isGoogleUser: true
+                };
+                saveToLocalStorage();
+                renderUserAuthArea();
+                showToast(`Signed in via Gmail: ${currentUser.email}`, 'success');
+            }
+        }
+
+        function logoutUser() {
+            currentUser = {
+                name: "Guest User",
+                email: "guest@logistics.com",
+                picture: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&auto=format&fit=crop&q=80",
+                isGoogleUser: false
+            };
+            saveToLocalStorage();
+            renderUserAuthArea();
+            showToast("Logged out of Google account", 'info');
+        }
+
+        function renderUserAuthArea() {
+            const container = document.getElementById('userInfoContainer');
+            if (currentUser.isGoogleUser) {
+                container.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <div class="relative">
+                            <img src="${currentUser.picture}" alt="${currentUser.name}" class="w-8 h-8 rounded-full border-2 border-emerald-400 shadow-sm object-cover" onerror="this.src='https://ui-avatars.com/api/?name=User&background=047857&color=fff'" />
+                            <span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-emerald-400 border-2 border-emerald-900 rounded-full" title="Active PIC"></span>
+                        </div>
+                        <div class="text-left hidden lg:block">
+                            <div class="text-xs font-bold leading-tight text-emerald-100 flex items-center space-x-1">
+                                <span>${escapeHtml(currentUser.name)}</span>
+                                <i class="fa-solid fa-circle-check text-[10px] text-emerald-400" title="Google Verified"></i>
+                            </div>
+                            <div class="text-[10px] text-emerald-300/80 leading-none">${escapeHtml(currentUser.email)}</div>
+                        </div>
+                    </div>
+                    <button onclick="logoutUser()" class="text-emerald-300 hover:text-white text-xs p-1 rounded hover:bg-emerald-800/50 transition" title="Sign Out">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <img src="${currentUser.picture}" class="w-7 h-7 rounded-full border border-emerald-500/50" />
+                        <span class="text-xs text-emerald-200 hidden sm:inline">${escapeHtml(currentUser.name)}</span>
+                    </div>
+                    <button onclick="triggerSimulatedGoogleLogin()" class="bg-white text-emerald-900 hover:bg-emerald-50 px-2.5 py-1 rounded text-xs font-semibold shadow-sm flex items-center space-x-1.5 transition">
+                        <i class="fa-brands fa-google text-red-500"></i>
+                        <span>Google Sign In</span>
+                    </button>
+                `;
+            }
+        }
+
+        // TAB NAVIGATION LOGIC
+        function switchTab(tab) {
+            currentTab = tab;
+            const activeBtn = document.getElementById('tabActiveBtn');
+            const issueYBtn = document.getElementById('tabIssueYBtn');
+            const viewActive = document.getElementById('viewActiveTab');
+            const viewIssueY = document.getElementById('viewIssueYTab');
+
+            if (tab === 'active') {
+                activeBtn.className = "px-4 py-2 font-medium rounded-t-lg transition flex items-center space-x-2 bg-slate-100 dark:bg-slate-900 text-emerald-800 dark:text-emerald-400 font-bold border-t-2 border-emerald-500 shadow-inner";
+                issueYBtn.className = "px-4 py-2 font-medium rounded-t-lg transition flex items-center space-x-2 text-emerald-200 hover:bg-emerald-800/60 hover:text-white";
+                viewActive.classList.remove('hidden');
+                viewIssueY.classList.add('hidden');
+            } else {
+                issueYBtn.className = "px-4 py-2 font-medium rounded-t-lg transition flex items-center space-x-2 bg-slate-100 dark:bg-slate-900 text-amber-800 dark:text-amber-400 font-bold border-t-2 border-amber-500 shadow-inner";
+                activeBtn.className = "px-4 py-2 font-medium rounded-t-lg transition flex items-center space-x-2 text-emerald-200 hover:bg-emerald-800/60 hover:text-white";
+                viewIssueY.classList.remove('hidden');
+                viewActive.classList.add('hidden');
+            }
+            renderGrid();
+        }
+
+        // AGING CALCULATION LOGIC
+        function calculateAgingDays(atdString) {
+            if (!atdString) return 0;
+            const atdDate = new Date(atdString);
+            if (isNaN(atdDate.getTime())) return 0;
+            const today = new Date();
+            const diffTime = today.getTime() - atdDate.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 3600 * 24));
+            return diffDays < 0 ? 0 : diffDays;
+        }
+
+        function getAgingBadge(days) {
+            let colorClasses = "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800";
+            if (days >= 4 && days <= 7) {
+                colorClasses = "bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800";
+            } else if (days > 7) {
+                colorClasses = "bg-rose-100 text-rose-800 border-rose-300 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800";
+            }
+            return `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold border ${colorClasses}">${days} d</span>`;
+        }
+
+        // RENDER ACTIVE TABLE HEADER WITH COLUMNS & FILTERS
+        function renderActiveTableHeader() {
+            const thead = document.getElementById('activeGridHead');
+            let headerHTML = '<tr><th class="p-2 w-10 text-center bg-slate-200 dark:bg-slate-700">#</th>';
+
+            COLUMN_KEYS.forEach(key => {
+                const title = COLUMN_NAMES[key];
+                headerHTML += `
+                    <th class="p-2 min-w-[140px] text-xs">
+                        <div class="flex flex-col space-y-1">
+                            <span class="font-bold text-slate-700 dark:text-slate-200">${title}</span>
+                            <input type="text" placeholder="Filter..." 
+                                data-col="${key}" 
+                                value="${columnFilters[key] || ''}" 
+                                class="col-filter-input w-full px-1.5 py-0.5 text-[11px] font-normal border rounded bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                        </div>
+                    </th>
+                `;
+            });
+
+            headerHTML += '<th class="p-2 w-16 text-center bg-slate-200 dark:bg-slate-700">Actions</th></tr>';
+            thead.innerHTML = headerHTML;
+
+            // Bind filter inputs
+            document.querySelectorAll('.col-filter-input').forEach(input => {
+                input.addEventListener('input', (e) => {
+                    const col = e.target.getAttribute('data-col');
+                    columnFilters[col] = e.target.value.toLowerCase();
+                    renderGrid();
+                });
+            });
+        }
+
+        // DATA FILTERING
+        function getFilteredBookings() {
+            return bookings.filter(b => {
+                // Update dynamic aging before filtering
+                b.aging = calculateAgingDays(b.atd);
+
+                // Global search matching
+                if (globalSearchQuery) {
+                    const q = globalSearchQuery.toLowerCase();
+                    const matchesGlobal = COLUMN_KEYS.some(k => String(b[k] || '').toLowerCase().includes(q));
+                    if (!matchesGlobal) return false;
+                }
+
+                // Column specific filtering
+                for (let key of COLUMN_KEYS) {
+                    if (columnFilters[key]) {
+                        const filterVal = columnFilters[key];
+                        const cellVal = String(b[key] || '').toLowerCase();
+                        if (!cellVal.includes(filterVal)) return false;
+                    }
+                }
+
+                return true;
+            });
+        }
+
+        // RENDER GRID DATA FOR ACTIVE & ISSUE Y TABS
+        function renderGrid() {
+            const allFiltered = getFilteredBookings();
+
+            // Split active vs Issue Y items
+            const activeList = allFiltered.filter(b => String(b.issueY).trim().toLowerCase() !== 'yes');
+            const issueYList = allFiltered.filter(b => String(b.issueY).trim().toLowerCase() === 'yes');
+
+            // Update badge counts
+            document.getElementById('activeBadgeCount').innerText = activeList.length;
+            document.getElementById('issueYBadgeCount').innerText = issueYList.length;
+
+            document.getElementById('activeSummaryText').innerText = `${activeList.length} Active Records`;
+            document.getElementById('issueYSummaryText').innerText = `${issueYList.length} Tracked History Items`;
+
+            if (currentTab === 'active') {
+                renderActiveGridBody(activeList);
+            } else {
+                renderIssueYGridBody(issueYList);
+            }
+        }
+
+        // RENDER TAB 1: ACTIVE BOOKINGS
+        function renderActiveGridBody(rows) {
+            const tbody = document.getElementById('activeGridBody');
+            if (rows.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="16" class="p-8 text-center text-slate-400 italic">
+                            No active records match the current filters.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            let html = '';
+            rows.forEach((row, index) => {
+                html += `<tr class="hover:bg-emerald-50/50 dark:hover:bg-slate-700/50 transition border-b border-slate-200 dark:border-slate-700">`;
+                html += `<td class="p-2 text-center text-slate-400 font-mono text-[11px]">${index + 1}</td>`;
+
+                COLUMN_KEYS.forEach(key => {
+                    if (key === 'aging') {
+                        html += `<td class="p-2 text-center font-semibold">${getAgingBadge(row.aging)}</td>`;
+                    } else if (key === 'issueY') {
+                        const isYes = row.issueY === 'Yes';
+                        html += `
+                            <td class="p-1 text-center">
+                                <select onchange="updateRowField('${row.id}', 'issueY', this.value)" 
+                                    class="text-xs font-semibold px-2 py-1 rounded border border-slate-300 dark:border-slate-600 ${isYes ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-200'}">
+                                    <option value="No" ${!isYes ? 'selected' : ''}>No</option>
+                                    <option value="Yes" ${isYes ? 'selected' : ''}>Yes</option>
+                                </select>
+                            </td>`;
+                    } else if (key === 'atd') {
+                        html += `
+                            <td class="p-1">
+                                <input type="datetime-local" value="${row.atd || ''}" 
+                                    onchange="updateRowField('${row.id}', 'atd', this.value)"
+                                    class="w-full px-1.5 py-1 text-xs border border-transparent hover:border-slate-300 focus:border-emerald-500 rounded bg-transparent focus:bg-white dark:focus:bg-slate-900" />
+                            </td>`;
+                    } else {
+                        html += `
+                            <td class="p-1">
+                                <div contenteditable="true" 
+                                    onblur="updateRowField('${row.id}', '${key}', this.innerText.trim())" 
+                                    class="px-2 py-1 min-h-[26px] outline-none hover:bg-slate-100 dark:hover:bg-slate-700 focus:bg-white dark:focus:bg-slate-900 focus:ring-1 focus:ring-emerald-500 rounded text-xs">
+                                    ${escapeHtml(row[key] || '')}
+                                </div>
+                            </td>`;
+                    }
+                });
+
+                html += `
+                    <td class="p-1 text-center">
+                        <button onclick="deleteRow('${row.id}')" class="text-rose-500 hover:text-rose-700 p-1.5 rounded hover:bg-rose-50 dark:hover:bg-rose-950/50 transition" title="Delete Row">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // RENDER TAB 2: ISSUE Y & RESOLVED HISTORY
+        function renderIssueYGridBody(rows) {
+            const tbody = document.getElementById('issueYGridBody');
+            if (rows.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="p-10 text-center text-slate-400 italic">
+                            <i class="fa-solid fa-circle-check text-2xl text-emerald-500 mb-2 block"></i>
+                            No pending Issue Y records or flagged items found.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            let html = '';
+            rows.forEach(row => {
+                const user = row.issueYUpdatedBy || {
+                    name: row.pic || 'Unknown PIC',
+                    email: 'operations@company.com',
+                    picture: 'https://ui-avatars.com/api/?name=PIC&background=0284c7&color=fff'
+                };
+
+                const formattedTime = row.issueYUpdatedAt 
+                    ? new Date(row.issueYUpdatedAt).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+                    : 'System Default';
+
+                html += `
+                    <tr class="hover:bg-amber-50/40 dark:hover:bg-amber-950/20 transition border-b border-slate-200 dark:border-slate-700">
+                        <td class="p-3 font-mono font-bold text-emerald-700 dark:text-emerald-400">
+                            ${escapeHtml(row.bookingNumber || 'N/A')}
+                        </td>
+                        <td class="p-3 font-medium">${escapeHtml(row.customerName || 'N/A')}</td>
+                        <td class="p-3 text-slate-600 dark:text-slate-300">
+                            <div>${escapeHtml(row.vvd || '')}</div>
+                            <div class="text-[10px] text-slate-400">${escapeHtml(row.pol || '')}</div>
+                        </td>
+                        <td class="p-3">
+                            <div>${row.atd ? row.atd.replace('T', ' ') : 'N/A'}</div>
+                            <div class="mt-1">${getAgingBadge(row.aging)}</div>
+                        </td>
+                        <td class="p-3 text-center">
+                            <select onchange="updateRowField('${row.id}', 'issueY', this.value)" 
+                                class="text-xs font-bold px-2 py-1 rounded border border-amber-300 bg-amber-100 text-amber-900 shadow-sm">
+                                <option value="Yes" selected>Yes (Flagged)</option>
+                                <option value="No">No (Resolve Issue)</option>
+                            </select>
+                        </td>
+                        <td class="p-3">
+                            <div class="flex items-center space-x-2">
+                                <img src="${user.picture}" class="w-7 h-7 rounded-full border border-emerald-500 object-cover" onerror="this.src='https://ui-avatars.com/api/?name=User&background=047857&color=fff'" />
+                                <div>
+                                    <div class="font-bold text-slate-800 dark:text-slate-100 text-xs">${escapeHtml(user.name)}</div>
+                                    <div class="text-[10px] text-slate-500 dark:text-slate-400">${escapeHtml(user.email)}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-3 text-slate-500 dark:text-slate-400 font-mono text-[11px]">
+                            <i class="fa-regular fa-clock mr-1"></i>${formattedTime}
+                        </td>
+                        <td class="p-3 max-w-xs">
+                            <div class="text-xs text-slate-700 dark:text-slate-200"><span class="font-semibold text-amber-700 dark:text-amber-400">Offshore:</span> ${escapeHtml(row.offshoreRemarks || 'None')}</div>
+                            <div class="text-xs text-slate-500 dark:text-slate-400 mt-0.5"><span class="font-semibold">Onshore:</span> ${escapeHtml(row.onshoreRemarks || 'None')}</div>
+                        </td>
+                        <td class="p-3 text-center">
+                            <button onclick="updateRowField('${row.id}', 'issueY', 'No')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-2.5 py-1 rounded text-xs font-semibold shadow transition" title="Mark as Resolved and Move to Active">
+                                <i class="fa-solid fa-check mr-1"></i>Resolve
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // UPDATE FIELD DATA WITH AUDIT TRAIL LOGGING
+        function updateRowField(id, field, value) {
+            const index = bookings.findIndex(b => b.id === id);
+            if (index === -1) return;
+
+            // Strict Booking Number Duplicate Check
+            if (field === 'bookingNumber' && value.trim() !== '') {
+                const isDuplicate = bookings.some(b => b.id !== id && b.bookingNumber.trim().toLowerCase() === value.trim().toLowerCase());
+                if (isDuplicate) {
+                    showToast(`Duplicate Booking Number "${value}" rejected!`, 'error');
+                    renderGrid();
+                    return;
+                }
+            }
+
+            // Record previous value to detect change
+            const prevVal = bookings[index][field];
+            bookings[index][field] = value;
+
+            // Log user info and timestamp when Issue Y is modified
+            if (field === 'issueY' && prevVal !== value) {
+                bookings[index].issueYUpdatedBy = { ...currentUser };
+                bookings[index].issueYUpdatedAt = new Date().toISOString();
+                
+                if (value === 'Yes') {
+                    showToast(`Booking ${bookings[index].bookingNumber || id} flagged as Issue Y and logged to History!`, 'info');
+                } else {
+                    showToast(`Booking ${bookings[index].bookingNumber || id} resolved and moved to Active!`, 'success');
+                }
+            } else {
+                showToast(`Updated ${COLUMN_NAMES[field] || field}`, 'success');
+            }
+
+            saveToLocalStorage();
+            renderGrid();
+        }
+
+        // DELETE ROW
+        function deleteRow(id) {
+            if (confirm("Are you sure you want to delete this booking record?")) {
+                bookings = bookings.filter(b => b.id !== id);
+                saveToLocalStorage();
+                renderGrid();
+                showToast("Booking record deleted", 'info');
+            }
+        }
+
+        // BULK PASTE MODAL HANDLERS
+        function openPasteModal() {
+            document.getElementById('pasteModal').classList.remove('hidden');
+            document.getElementById('pasteModal').classList.add('flex');
+            document.getElementById('pasteTextarea').value = '';
+            document.getElementById('pasteStatusText').innerText = '';
+        }
+
+        function closePasteModal() {
+            document.getElementById('pasteModal').classList.add('hidden');
+            document.getElementById('pasteModal').classList.remove('flex');
+        }
+
+        function processBulkPaste() {
+            const rawText = document.getElementById('pasteTextarea').value.trim();
+            if (!rawText) {
+                document.getElementById('pasteStatusText').innerText = "Please paste tab-delimited or CSV rows.";
+                return;
+            }
+
+            const lines = rawText.split('\n');
+            let addedCount = 0;
+            let duplicateCount = 0;
+
+            lines.forEach((line, idx) => {
+                if (!line.trim()) return;
+                const cols = line.split('\t').length > 1 ? line.split('\t') : line.split(',');
+
+                const bookingNum = (cols[5] || `BK-PASTE-${Date.now()}-${idx}`).trim();
+
+                // Check for duplicate booking numbers
+                const exists = bookings.some(b => b.bookingNumber.trim().toLowerCase() === bookingNum.toLowerCase());
+                if (exists && cols[5]) {
+                    duplicateCount++;
+                    return; // Skip duplicate
+                }
+
+                const newBooking = {
+                    id: 'b_' + Date.now() + '_' + idx,
+                    pic: cols[0] ? cols[0].trim() : '',
+                    vvd: cols[1] ? cols[1].trim() : '',
+                    pol: cols[2] ? cols[2].trim() : '',
+                    atd: cols[3] ? cols[3].trim() : new Date().toISOString().slice(0, 16),
+                    receivedLoadlist: cols[4] ? cols[4].trim() : '',
+                    bookingNumber: bookingNum,
+                    customerName: cols[6] ? cols[6].trim() : '',
+                    followUp: cols[7] ? cols[7].trim() : '',
+                    date: cols[8] ? cols[8].trim() : '',
+                    pic2: cols[9] ? cols[9].trim() : '',
+                    aging: calculateAgingDays(cols[3]),
+                    issueY: (cols[11] && cols[11].trim().toLowerCase() === 'yes') ? 'Yes' : 'No',
+                    offshoreRemarks: cols[12] ? cols[12].trim() : '',
+                    onshoreRemarks: cols[13] ? cols[13].trim() : '',
+                    issueYUpdatedBy: null,
+                    issueYUpdatedAt: null
+                };
+
+                bookings.push(newBooking);
+                addedCount++;
+            });
+
+            saveToLocalStorage();
+            renderGrid();
+            closePasteModal();
+
+            if (duplicateCount > 0) {
+                showToast(`Imported ${addedCount} rows. ${duplicateCount} duplicate booking numbers skipped.`, 'info');
+            } else {
+                showToast(`Successfully imported ${addedCount} records.`, 'success');
+            }
+        }
+
+        // EXPORT DATA TO CSV
+        function exportToCSV() {
+            if (bookings.length === 0) {
+                showToast("No data to export!", 'error');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            
+            // Header Row
+            const headers = COLUMN_KEYS.map(k => `"${COLUMN_NAMES[k]}"`).join(",");
+            csvContent += headers + "\r\n";
+
+            // Data Rows
+            bookings.forEach(b => {
+                const row = COLUMN_KEYS.map(k => `"${String(b[k] || '').replace(/"/g, '""')}"`).join(",");
+                csvContent += row + "\r\n";
+            });
+
+            const fileName = document.getElementById('docTitleInput').value.trim() || 'Logistics_Operations.csv';
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", fileName.endsWith('.csv') ? fileName : `${fileName}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast("CSV export completed", 'success');
+        }
+
+        // TOAST NOTIFICATION UTILITY
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msg = document.getElementById('toastMessage');
+
+            msg.innerText = message;
+            
+            if (type === 'error') {
+                icon.className = "fa-solid fa-circle-xmark text-rose-400 text-base";
+            } else if (type === 'info') {
+                icon.className = "fa-solid fa-circle-info text-sky-400 text-base";
+            } else {
+                icon.className = "fa-solid fa-circle-check text-emerald-400 text-base";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // EVENT LISTENERS SETUP
+        function setupEventListeners() {
+            // Global Search Input
+            document.getElementById('globalSearchInput').addEventListener('input', (e) => {
+                globalSearchQuery = e.target.value.trim();
+                renderGrid();
+            });
+
+            // Reset Filters
+            document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+                columnFilters = {};
+                globalSearchQuery = '';
+                document.getElementById('globalSearchInput').value = '';
+                renderActiveTableHeader();
+                renderGrid();
+                showToast("All filters cleared", 'info');
+            });
+
+            // Add New Row
+            document.getElementById('addNewRowBtn').addEventListener('click', () => {
+                const newRow = {
+                    id: 'b_' + Date.now(),
+                    pic: currentUser.name.split(' ')[0],
+                    vvd: 'VESSEL / VOYAGE',
+                    pol: 'POL',
+                    atd: new Date().toISOString().slice(0, 16),
+                    receivedLoadlist: new Date().toISOString().slice(0, 10),
+                    bookingNumber: `BK-${Math.floor(1000000 + Math.random() * 9000000)}`,
+                    customerName: 'New Customer',
+                    followUp: 'Pending',
+                    date: new Date().toISOString().slice(0, 10),
+                    pic2: currentUser.name.split(' ')[0],
+                    aging: 0,
+                    issueY: 'No',
+                    offshoreRemarks: '',
+                    onshoreRemarks: '',
+                    issueYUpdatedBy: null,
+                    issueYUpdatedAt: null
+                };
+
+                bookings.unshift(newRow);
+                saveToLocalStorage();
+                renderGrid();
+                showToast("New booking row added", 'success');
+            });
+
+            // Open Paste Modal
+            document.getElementById('openPasteModalBtn').addEventListener('click', openPasteModal);
+
+            // Export CSV
+            document.getElementById('exportCsvBtn').addEventListener('click', exportToCSV);
+
+            // Toggle Dark Mode
+            document.getElementById('toggleDarkModeBtn').addEventListener('click', () => {
+                document.documentElement.classList.toggle('dark');
+                const isDark = document.documentElement.classList.contains('dark');
+                showToast(`Switched to ${isDark ? 'Dark' : 'Light'} Mode`, 'info');
+            });
+
+            // Doc Title Input
+            document.getElementById('docTitleInput').addEventListener('change', () => {
+                saveToLocalStorage();
+            });
+        }
+
+        // UTILITY HTML ESCAPING
+        function escapeHtml(str) {
+            return String(str || '')
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+
+    <!-- Tab Action Modal (Rename/Delete Confirmations) -->
+    <div id="modal-container" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 id="modal-title" class="text-lg font-bold text-white mb-2">Manage Tab</h3>
+            <div id="modal-body" class="mb-6">
+                <!-- Dynamic Modal Content -->
+            </div>
+            <div class="flex justify-end space-x-3">
+                <button id="modal-btn-cancel" class="px-4 py-2 text-sm bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition">Cancel</button>
+                <button id="modal-btn-confirm" class="px-4 py-2 text-sm bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-500 transition">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT FOR TAB MANAGEMENT LOGIC -->
+    <script>
+        let modalConfirmHandler = null;
+
+        // Dynamic Tab Management Methods
+        function renderTabs() {
+            const container = document.getElementById('tabs-container');
+            if (!container) return;
+            container.innerHTML = '';
+
+            const tabs = [
+                { id: 'active', name: 'Active Bookings', deletable: false },
+                { id: 'issueY', name: 'Issue Y & History', deletable: false }
+            ];
+
+            tabs.forEach(tab => {
+                const isActive = tab.id === currentTab;
+                const tabEl = document.createElement('div');
+                tabEl.className = `group flex items-center space-x-2 px-4 py-2 border-b-2 text-xs font-semibold cursor-pointer transition ${
+                    isActive
+                        ? 'border-emerald-400 bg-emerald-950/60 text-emerald-300'
+                        : 'border-transparent text-emerald-200/70 hover:text-white hover:bg-emerald-800/40'
+                }`;
+
+                tabEl.innerHTML = `
+                    <span class="tab-title select-none">${escapeHtml(tab.name)}</span>
+                    <span id="${tab.id}BadgeCount" class="ml-1.5 px-1.5 py-0.2 text-[10px] rounded-full bg-emerald-900 text-emerald-200 border border-emerald-700">0</span>
+                `;
+
+                tabEl.addEventListener('click', () => {
+                    switchTab(tab.id);
+                });
+
+                container.appendChild(tabEl);
+            });
+        }
+
+        function createNewTab() {
+            const modal = document.getElementById('modal-container');
+            const title = document.getElementById('modal-title');
+            const body = document.getElementById('modal-body');
+
+            title.innerText = 'Add New Custom Sheet';
+            body.innerHTML = `
+                <label class="block text-xs font-semibold text-slate-400 mb-2 uppercase">Sheet Name</label>
+                <input type="text" id="input-new-sheet-name" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-emerald-500 text-xs" placeholder="e.g. Q4 Imports" />
+            `;
+
+            modal.classList.remove('hidden');
+            const input = document.getElementById('input-new-sheet-name');
+            input.focus();
+
+            modalConfirmHandler = () => {
+                const sheetName = input.value.trim();
+                if (sheetName) {
+                    showToast(`Created custom sheet: ${sheetName}`, 'success');
+                    closeModal();
+                }
+            };
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal-container');
+            modal.classList.add('hidden');
+            modalConfirmHandler = null;
+        }
+
+        // Modal Action Bindings
+        document.getElementById('btn-add-tab').addEventListener('click', createNewTab);
+        document.getElementById('modal-btn-cancel').addEventListener('click', closeModal);
+        document.getElementById('modal-btn-confirm').addEventListener('click', () => {
+            if (modalConfirmHandler) modalConfirmHandler();
+        });
+
+        // Initialize layout setup on startup
+        window.addEventListener('DOMContentLoaded', () => {
+            renderTabs();
+        });
+    </script>
+</body>
+</html>
